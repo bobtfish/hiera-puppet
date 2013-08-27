@@ -71,7 +71,7 @@ module HieraPuppet
   end
 
   def hiera_config_file
-    '/etc/puppet/hiera.yaml'
+    File.exist?('/etc/puppet/hiera.yaml') ? '/etc/puppet/hiera.yaml' : '/etc/hiera.yaml'
   end
 end
 
