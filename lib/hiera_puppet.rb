@@ -6,11 +6,12 @@ module HieraPuppet
   module_function
 
   def lookup(key, default, scope, override, resolution_type)
-    unless scope.respond_to?("[]")
+   override_hieradata_dir = scope.to_hash['override_hieradata_dir']
+   unless scope.respond_to?("[]")
       scope = Hiera::Scope.new(scope)
     end
 
-    answer = hiera.lookup(key, default, scope, override, resolution_type)
+    answer = hiera(override_hieradata_dir).lookup(key, default, scope, override, resolution_type)
 
     if answer.nil?
       raise(Puppet::ParseError, "Could not find data item #{key} in any Hiera data file and no default supplied")
@@ -53,11 +54,11 @@ module HieraPuppet
   private
   module_function
 
-  def hiera
-    @hiera ||= Hiera.new(:config => hiera_config)
+  def hiera(override_hieradatadir)
+    @hiera ||= Hiera.new(:config => hiera_config(override_hieradatadir))
   end
 
-  def hiera_config
+  def hiera_config(override_hieradatadir)
     config = {}
 
     if config_file = hiera_config_file
@@ -65,6 +66,7 @@ module HieraPuppet
     end
 
     config[:logger] = 'puppet'
+    config[:yaml][:datadir] = override_hieradatadir if override_hieradatadir
     config
   end
 
