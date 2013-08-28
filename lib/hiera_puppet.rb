@@ -6,12 +6,17 @@ module HieraPuppet
   module_function
 
   def lookup(key, default, scope, override, resolution_type)
-   override_hieradata_dir = scope.to_hash['override_hieradata_dir']
-   unless scope.respond_to?("[]")
+    override_hieradata_dir = scope.to_hash['override_hieradata_dir']
+    override_hiera_config  = scope.to_hash['override_hiera_config']
+
+    unless scope.respond_to?("[]")
       scope = Hiera::Scope.new(scope)
     end
 
-    answer = hiera(override_hieradata_dir).lookup(key, default, scope, override, resolution_type)
+    answer = hiera(
+        :datadir => override_hieradata_dir,
+        :config_file => override_hiera_config).
+      lookup(key, default, scope, override, resolution_type)
 
     if answer.nil?
       raise(Puppet::ParseError, "Could not find data item #{key} in any Hiera data file and no default supplied")
@@ -54,19 +59,20 @@ module HieraPuppet
   private
   module_function
 
-  def hiera(override_hieradatadir)
-    @hiera ||= Hiera.new(:config => hiera_config(override_hieradatadir))
+  def hiera(options={})
+    @hiera ||= Hiera.new(:config => hiera_config(options || {}))
   end
 
-  def hiera_config(override_hieradatadir)
+  def hiera_config(options={})
     config = {}
 
-    if config_file = hiera_config_file
-      config = Hiera::Config.load(config_file)
+    if config_file = (options[:config_file] || hiera_config_file)
+      Hiera::Config.load(config_file)
     end
 
     config[:logger] = 'puppet'
-    config[:yaml][:datadir] = override_hieradatadir if override_hieradatadir
+    config[:yaml] ||= {}
+    config[:yaml][:datadir] ||= options[:datadir]
     config
   end
 
@@ -74,4 +80,3 @@ module HieraPuppet
     File.exist?('/etc/puppet/hiera.yaml') ? '/etc/puppet/hiera.yaml' : '/etc/hiera.yaml'
   end
 end
-
