@@ -1,4 +1,5 @@
 require 'rubygems'
+require 'rake'
 spec = Gem::Specification.new do |s|
   s.name = "hiera-puppet"
   s.version = '1.0'
